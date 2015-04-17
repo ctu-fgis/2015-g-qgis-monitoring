@@ -10,5 +10,5 @@ Semestrální projekt předmětu 155YFSG (akademický rok 2014/2015)
 
 # Zadání
 
-[Zadání projektu](2015-g-qgis-monitoring/zadani.pdf)
+[Zadání projektu](zadani.pdf)
 
