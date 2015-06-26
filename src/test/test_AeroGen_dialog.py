@@ -13,11 +13,11 @@ __date__ = '2015-05-02'
 __copyright__ = 'Copyright 2015, Matej Krejci'
 
 import unittest
-
-from PyQt4.QtGui import QDialogButtonBox, QDialog
+from PyQt4 import QtCore
+from PyQt4.QtGui import QDialogButtonBox, QDialog,QFileDialog,QAction
 
 from AeroGen_dialog import AeroGenDialog
-
+import os
 from utilities import get_qgis_app
 QGIS_APP = get_qgis_app()
 
@@ -28,7 +28,8 @@ class AeroGenDialogTest(unittest.TestCase):
     def setUp(self):
         """Runs before each test."""
         self.dialog = AeroGenDialog(None)
-
+        #self.dialog.pushButton.button.clicked.connect(self.openFile)
+        print 'asacda'
     def tearDown(self):
         """Runs after each test."""
         self.dialog = None
@@ -40,6 +41,8 @@ class AeroGenDialogTest(unittest.TestCase):
         button.click()
         result = self.dialog.result()
         self.assertEqual(result, QDialog.Accepted)
+
+
 
     def test_dialog_cancel(self):
         """Test we can click cancel."""

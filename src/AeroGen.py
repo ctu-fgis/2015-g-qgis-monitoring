@@ -21,11 +21,12 @@
  ***************************************************************************/
 """
 from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication
-from PyQt4.QtGui import QAction, QIcon
+from PyQt4.QtGui import QAction, QIcon,QFileDialog,QMessageBox
 # Initialize Qt resources from file resources.py
 #import resources_rc
 # Import the code for the dialog
 from AeroGen_dialog import AeroGenDialog
+
 import os.path
 
 
@@ -59,14 +60,26 @@ class AeroGen:
                 QCoreApplication.installTranslator(self.translator)
 
         # Create the dialog (after translation) and keep reference
-        self.dlg = AeroGenDialog()
 
+        self.dlg = AeroGenDialog()
+        self.poylyName=''
+        self.tlName=''
+        self.slName=''
         # Declare instance attributes
         self.actions = []
         self.menu = self.tr(u'&AeroGen')
         # TODO: We are going to let the user set this up in a future iteration
         self.toolbar = self.iface.addToolBar(u'AeroGen')
         self.toolbar.setObjectName(u'AeroGen')
+
+        self.dlg.pushButton.clicked.connect(lambda: self.loadFromFile(1))
+        self.dlg.pushButton_2.clicked.connect(lambda: self.loadFromFile(2))
+        self.dlg.pushButton_3.clicked.connect(lambda:self.msgBox('Not implemented'))
+        self.dlg.pushButton_4.clicked.connect(lambda: self.loadFromFile(4))
+        self.dlg.pushButton_5.clicked.connect(lambda:self.msgBox('Not implemented'))
+        self.dlg.pushButton_6.clicked.connect(lambda:self.msgBox('Not implemented'))
+        self.dlg.generate.clicked.connect(self.generate)
+
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -167,6 +180,41 @@ class AeroGen:
             callback=self.run,
             parent=self.iface.mainWindow())
 
+    def msgBox(self,text="Not implemented",title="Info message"):
+        print text
+        print title
+        QMessageBox.warning(self.dlg, title,text)
+
+    def loadFromFile(self,lbl):
+        fileName = str(QFileDialog.getOpenFileName())
+
+        if not fileName:
+            return
+
+        if not self.chckFile(fileName):
+            return
+
+
+        if lbl == 1:
+            self.dlg.lineEdit.setText(fileName)
+
+        elif lbl == 2:
+            self.dlg.lineEdit_2.setText(fileName)
+
+        elif lbl == 4:
+            self.dlg.lineEdit_4.setText(fileName)
+
+
+
+
+    def chckFile(self,fileName):
+        try:
+            open(str(fileName), 'r')
+        except IOError:
+            QMessageBox.information(self.dlg, "Unable to open file",
+                    "There was an error opening \"%s\"" % fileName)
+            return False
+        return True
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
@@ -178,15 +226,47 @@ class AeroGen:
         # remove the toolbar
         del self.toolbar
 
-
     def run(self):
         """Run method that performs all the real work"""
         # show the dialog
         self.dlg.show()
+
+
+    def generate(self):
+        """Run method that performs all the real work"""
+        # show the dialog
+        self.dlg.show()
         # Run the dialog event loop
-        result = self.dlg.exec_()
+        #result = self.dlg.exec_()
         # See if OK was pressed
-        if result:
-            # Do something useful here - delete the line containing pass and
-            # substitute with your code.
-            pass
+        #if result:
+        # Do something useful here - delete the line containing pass and
+        # substitute with your code.
+
+        from parser import *
+        parser = AeroGenParser()
+        vecBuilder=AeroGenVectorBuilder()
+
+        self.poylyName=self.dlg.lineEdit.text()
+        if self.poylyName!='':
+            if self.chckFile(self.poylyName):
+                poly =  parser.parseAreaXYZ( self.poylyName)
+                vecBuilder.createArea(poly,os.path.basename(self.poylyName))
+
+
+
+        self.slName=self.dlg.lineEdit_2.text()
+        if self.slName!='':
+            if self.chckFile(self.slName):
+                tl = parser.parseLines(self.slName)
+                vecBuilder.createLines(tl,os.path.basename(self.slName))
+
+
+
+
+        self.tlName=self.dlg.lineEdit_4.text()
+        if self.tlName!='':
+            if self.chckFile(self.tlName):
+                sl = parser.parseLines(self.tlName,'x')
+                vecBuilder.createLines(sl,os.path.basename(self.tlName))
+

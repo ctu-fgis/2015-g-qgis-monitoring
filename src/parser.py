@@ -1,14 +1,17 @@
+# Use pdb for debugging
+#from PyQt4 import QtCore
+#import pdb
+# These lines allow you to set a breakpoint in the app
+#pyqtRemoveInputHook()
+#pdb.set_trace()
 
-
-
+from qgis.core import *
+#from PyQt4.QtCore import *
+#from PyQt4.QtGui import *
+import qgis.utils
 import sys
 
-
-
-
-
 class AeroGenParser():
-
     def __init__(self):
         self.areaXYZ={}
         self.tieLines={}
@@ -147,14 +150,65 @@ class AeroGenParser():
             lineNum+=1
         return self.surveyLinesLatLon
 
+
+
+class AeroGenVectorBuilder():
+    def __init__(self):
+        pass
+
+    def writeLayer(self,layer,filename="my_shapes.shp"):
+        error = QgsVectorFileWriter.writeAsVectorFormat(layer, filename, "CP1250", None, "ESRI Shapefile")
+        if error == QgsVectorFileWriter.NoError:
+            return True
+        else:
+            return False
+
+    def createArea(self,data,name):
+        points=[]
+        for line in data['tieLines']:
+            ptline= line.split(';')
+            points.append(QgsPoint(float(ptline[1]),float(ptline[2])))
+
+        layer =  QgsVectorLayer('Polygon', name , "memory")
+
+        poly = QgsFeature()
+        poly.setGeometry(QgsGeometry.fromPolygon([points]))
+        layer.dataProvider().addFeatures([poly])
+        QgsMapLayerRegistry.instance().addMapLayers([layer])
+        self.writeLayer(layer)
+
+
+    def createLines(self,data,name):
+        layer =  QgsVectorLayer('LineString', name , "memory")
+        for key, value in data.iteritems():
+
+            p1=QgsPoint(float(value['xcoor0']),float(value['ycoor0']))
+            p2=QgsPoint(float(value['xcoor1']),float(value['ycoor1']))
+            line = QgsFeature()
+            line.setGeometry(QgsGeometry.fromPolyline([p1,p2]))
+
+            layer.dataProvider().addFeatures([line])
+            QgsMapLayerRegistry.instance().addMapLayers([layer])
+            if self.writeLayer(layer):
+                QgsMapLayerRegistry.instance().addMapLayer(layer)
+
+
+
 def main():
     parser=AeroGenParser()
-    #parser.parseAreaXYZ('/home/matt/Dropbox/CVUT/mgr/qgisPlugin/data/data_02_real_CR/area.xyz')
-    #parser.parseLines('/home/matt/Dropbox/CVUT/mgr/qgisPlugin/data/data_02_real_CR/area_tl.xyz')
-    #parser.parseLines('/home/matt/Dropbox/CVUT/mgr/qgisPlugin/data/data_02_real_CR/area_sl.xyz','x')
-    parser.parseSurveyLines('/home/matt/Dropbox/CVUT/mgr/qgisPlugin/data/data_02_real_CR/area_sl_LatLon.xyz')
-main()
+    poly= parser.parseAreaXYZ('/home/matt/Dropbox/CVUT/mgr/qgisPlugin/data/data_02_real_CR/area.xyz')
+    tl=parser.parseLines('/home/matt/Dropbox/CVUT/mgr/qgisPlugin/data/data_02_real_CR/area_tl.xyz')
+    sl=parser.parseLines('/home/matt/Dropbox/CVUT/mgr/qgisPlugin/data/data_02_real_CR/area_sl.xyz','x')
+    #data4=parser.parseSurveyLines('/home/matt/Dropbox/CVUT/mgr/qgisPlugin/data/data_02_real_CR/area_sl_LatLon.xyz')
 
+
+    vecBuilder=AeroGenVectorBuilder()
+    vecBuilder.createLines(tl,'tl')
+    vecBuilder.createArea(poly)
+    vecBuilder.createLines(sl,'sl')
+'''
+main()
+'''
 
 
 
